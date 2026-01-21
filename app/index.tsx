@@ -8,7 +8,7 @@ export default function IntroScreen() {
   useEffect(() => {
     const timer = setTimeout(() => {
       router.replace("/home");
-    }, 10000); // 10 giây
+    }, 10000);
 
     return () => clearTimeout(timer);
   }, []);
@@ -29,7 +29,7 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
-    backgroundColor: "#ffffff",
+    backgroundColor: "#fff",
   },
   logo: {
     width: 200,
