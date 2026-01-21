@@ -1,50 +1,44 @@
-# Welcome to your Expo app 👋
+# 📱 Intro App – React Native (Expo)
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+## 📌 Giới thiệu dự án
+Đây là ứng dụng React Native đơn giản được xây dựng bằng **Expo**, nhằm làm quen với môi trường phát triển React Native và cách tổ chức một ứng dụng di động cơ bản.
 
-## Get started
+Ứng dụng gồm **02 màn hình**:
+- **Intro Screen**: hiển thị logo thương hiệu trong 10 giây.
+- **Homepage**: giới thiệu thông tin cá nhân của sinh viên.
 
-1. Install dependencies
+Dự án được thực hiện trong khuôn khổ **Bài tập 01 – React Native**.
 
-   ```bash
-   npm install
-   ```
+---
 
-2. Start the app
+## 🎯 Mục tiêu
+- Làm quen với React Native và Expo
+- Hiểu cách tạo project, cấu trúc thư mục
+- Thực hành điều hướng giữa các màn hình
+- Xây dựng giao diện đơn giản, rõ ràng
 
-   ```bash
-   npx expo start
-   ```
+---
 
-In the output, you'll find options to open the app in a
+## ✨ Chức năng chính
+- Hiển thị màn hình **Intro** khi mở ứng dụng
+- Tự động chuyển sang **Homepage** sau 10 giây
+- Hiển thị thông tin cá nhân sinh viên:
+  - Họ và tên
+  - MSSV
+  - Lớp
+  - Email
+  - Tiểu sử ngắn
+- Giao diện dạng card, bo góc, thân thiện người dùng
 
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
+---
 
-You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
+## 🛠 Công nghệ sử dụng
+- **React Native**
+- **Expo**
+- **TypeScript**
+- **Expo Router**
+- **Node.js**
+- **Expo Go** (chạy app trên thiết bị thật)
 
-## Get a fresh project
+---
 
-When you're ready, run:
-
-```bash
-npm run reset-project
-```
-
-This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
-
-## Learn more
-
-To learn more about developing your project with Expo, look at the following resources:
-
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
-
-## Join the community
-
-Join our community of developers creating universal apps.
-
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
