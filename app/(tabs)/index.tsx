@@ -7,8 +7,8 @@ import { HelloWave } from '@/components/hello-wave';
 import ParallaxScrollView from '@/components/parallax-scroll-view';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
-
-const API_URL = Platform.OS === 'android' ? 'http://10.0.2.2:8888/api/v1' : 'http://localhost:8888/api/v1';
+import { fetchWithAuth } from '@/services/api';
+import { clearAuth } from '@/utils/storage';
 
 export default function HomeScreen() {
   const [userInfo, setUserInfo] = useState<any>(null);
@@ -22,9 +22,8 @@ export default function HomeScreen() {
   const fetchProfile = async () => {
     try {
       console.log('Fetching profile...');
-      const response = await fetch(`${API_URL}/user/me`, {
+      const response = await fetchWithAuth('/user/me', {
           method: 'GET',
-          // No headers needed if relying on cookies, or 'credentials: include' if this was web
       });
       console.log('Profile Response Status:', response.status);
       
@@ -44,7 +43,8 @@ export default function HomeScreen() {
     }
   };
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
+      await clearAuth();
       router.replace('/');
   };
 

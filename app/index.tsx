@@ -6,16 +6,13 @@ import {
   TouchableOpacity,
   Alert,
   StyleSheet,
-  Platform,
   SafeAreaView,
   StatusBar,
-  ScrollView // Added ScrollView
+  ScrollView 
 } from 'react-native';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useRouter } from 'expo-router';
-
-// Adjust for Android Emulator vs iOS Simulator vs Web
-const API_URL = Platform.OS === 'android' ? 'http://10.0.2.2:8888/api/v1' : 'http://localhost:8888/api/v1';
+import { authService } from '@/services/api';
+import { saveTokens, saveUser } from '@/utils/storage';
 
 const AuthScreen = () => {
   const router = useRouter();
@@ -39,38 +36,37 @@ const AuthScreen = () => {
     }
 
     try {
-      const endpoint = isLogin ? '/auth/login' : '/auth/register';
-      const url = `${API_URL}${endpoint}`;
-      
-      const bodyData = isLogin 
-        ? { email, password } 
-        : { name, email, password, gender };
-
-      console.log('Sending request to:', url, bodyData);
-
-      const response = await fetch(url, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(bodyData),
-      });
-
-      const data = await response.json();
-      console.log('Response:', response.status, data);
-
-      if (response.ok) {
-        if (isLogin) {
-            // Assume cookie is set automatically by the network stack for subsequent requests
-            router.replace('/(tabs)');
+      if (isLogin) {
+        console.log('Logging in with:', email);
+        const data = await authService.login(email, password);
+        console.log('Login response:', data);
+        
+        if (data.success) {
+          const { token, user } = data.data;
+          await saveTokens(token.accessToken, token.refreshToken);
+          await saveUser(user);
+          Alert.alert('Thành công', 'Đăng nhập thành công');
+          router.replace('/(tabs)');
         } else {
-            Alert.alert('Thành công', 'Đăng ký thành công! Hãy đăng nhập.');
-            setIsLogin(true);
+          if (data.message === 'User email is not verified') {
+            Alert.alert('Thông báo', 'Email chưa được xác thực. Vui lòng xác thực OTP.');
+            router.push({ pathname: '/verify-otp', params: { email } });
+          } else {
+            Alert.alert('Đăng nhập thất bại', data.message || 'Lỗi không xác định');
+          }
         }
       } else {
-        Alert.alert('Thất bại', data.message || 'Lỗi từ server');
+        const data = await authService.register(name, email, password, gender);
+        if (data.success) {
+          Alert.alert('Đăng ký thành công', 'Vui lòng nhập OTP gửi về email');
+          router.push({ pathname: '/verify-otp', params: { email } });
+        } else {
+          Alert.alert('Đăng ký thất bại', data.message || 'Lỗi không xác định');
+        }
       }
     } catch (error) {
       console.error(error);
-      Alert.alert('Lỗi mạng', 'Không kết nối được tới server ' + API_URL);
+      Alert.alert('Lỗi mạng', 'Không kết nối được tới server');
     }
   };
 
@@ -120,6 +116,12 @@ const AuthScreen = () => {
           value={password}
           onChangeText={setPassword}
         />
+
+        {isLogin && (
+          <TouchableOpacity onPress={() => router.push('/forgot-password')} style={{alignSelf: 'flex-end', marginBottom: 15 }}>
+            <Text style={{ color: '#E56B6F', fontSize: 14 }}>Forgot Password?</Text>
+          </TouchableOpacity>
+        )}
 
         <TouchableOpacity style={styles.button} onPress={handleAuthentication}>
           <Text style={styles.buttonText}>
