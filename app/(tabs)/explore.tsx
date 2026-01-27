@@ -21,7 +21,7 @@ export default function TabTwoScreen() {
           style={styles.headerImage}
         />
       }>
-      <ThemedView style={styles.titleContainer}>
+      <ThemedView className="flex-row gap-2">
         <ThemedText
           type="title"
           style={{
@@ -105,8 +105,8 @@ const styles = StyleSheet.create({
     left: -35,
     position: 'absolute',
   },
-  titleContainer: {
-    flexDirection: 'row',
-    gap: 8,
-  },
+  // titleContainer: { // Removed
+  //   flexDirection: 'row',
+  //   gap: 8,
+  // },
 });

@@ -1,51 +1,27 @@
 import { Image } from 'expo-image';
-import { StyleSheet, ActivityIndicator, View, Platform, Button } from 'react-native';
-import React, { useEffect, useState } from 'react';
+import { StyleSheet, ActivityIndicator, View, Button } from 'react-native';
+import React, { useEffect } from 'react';
 import { useRouter } from 'expo-router';
 
 import { HelloWave } from '@/components/hello-wave';
 import ParallaxScrollView from '@/components/parallax-scroll-view';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
-import { fetchWithAuth } from '@/services/api';
-import { clearAuth } from '@/utils/storage';
+import { useAppDispatch, useAppSelector } from '@/store/hooks';
+import { fetchUserProfile, logoutUser } from '@/store/slices/authSlice';
 
 export default function HomeScreen() {
-  const [userInfo, setUserInfo] = useState<any>(null);
-  const [loading, setLoading] = useState(true);
+  const { user, loading, error } = useAppSelector((state) => state.auth);
+  const dispatch = useAppDispatch();
   const router = useRouter();
 
   useEffect(() => {
-    fetchProfile();
-  }, []);
-
-  const fetchProfile = async () => {
-    try {
-      console.log('Fetching profile...');
-      const response = await fetchWithAuth('/user/me', {
-          method: 'GET',
-      });
-      console.log('Profile Response Status:', response.status);
-      
-      const data = await response.json();
-      console.log('Profile Data:', data);
-
-      if (response.ok) {
-        setUserInfo(data);
-      } else {
-        setUserInfo({ error: data.message || 'Error fetching profile' });
-      }
-    } catch (error) {
-      console.error(error);
-      setUserInfo({ error: 'Network Error' });
-    } finally {
-      setLoading(false);
-    }
-  };
+    dispatch(fetchUserProfile());
+  }, [dispatch]);
 
   const handleLogout = async () => {
-      await clearAuth();
-      router.replace('/');
+    await dispatch(logoutUser());
+    router.replace('/');
   };
 
   return (
@@ -57,30 +33,26 @@ export default function HomeScreen() {
           style={styles.reactLogo}
         />
       }>
-      <ThemedView style={styles.titleContainer}>
-        <ThemedText type="title">Welcome {userInfo?.name || 'User'}!</ThemedText>
+      <ThemedView className="flex-row items-center gap-2">
+        <ThemedText type="title">Welcome {user?.name || 'User'}!</ThemedText>
         <HelloWave />
       </ThemedView>
 
-      <ThemedView style={styles.stepContainer}>
+      <ThemedView className="gap-2 mb-2">
         <ThemedText type="subtitle">User Profile</ThemedText>
         
         {loading ? (
           <ActivityIndicator size="large" color="#0000ff" />
         ) : (
           <View>
-             {userInfo ? (
-                 <View style={styles.infoContainer}>
-                     {userInfo.error ? (
-                        <ThemedText style={{color: 'red'}}>{userInfo.error}</ThemedText>
-                     ) : (
-                        <>
-                            <ThemedText>ID: {userInfo.id}</ThemedText>
-                            <ThemedText>Name: {userInfo.name}</ThemedText>
-                            <ThemedText>Email: {userInfo.email}</ThemedText>
-                            <ThemedText>Gender: {userInfo.gender}</ThemedText>
-                        </>
-                     )}
+             {error ? (
+                 <ThemedText className="text-red-500">{error}</ThemedText>
+             ) : user ? (
+                 <View className="p-2 gap-1 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-black/10">
+                    <ThemedText>ID: {user.id}</ThemedText>
+                    <ThemedText>Name: {user.name}</ThemedText>
+                    <ThemedText>Email: {user.email}</ThemedText>
+                    <ThemedText>Gender: {user.gender}</ThemedText>
                  </View>
              ) : (
                  <ThemedText>No user info available</ThemedText>
@@ -89,22 +61,15 @@ export default function HomeScreen() {
         )}
       </ThemedView>
     
-      <Button title="Logout" onPress={handleLogout} />
+      <View className="mt-4">
+        <Button title="Logout" onPress={handleLogout} />
+      </View>
   
     </ParallaxScrollView>
   );
 }
 
 const styles = StyleSheet.create({
-  titleContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  stepContainer: {
-    gap: 8,
-    marginBottom: 8,
-  },
   reactLogo: {
     height: 178,
     width: 290,
@@ -112,8 +77,4 @@ const styles = StyleSheet.create({
     left: 0,
     position: 'absolute',
   },
-  infoContainer: {
-      padding: 10,
-      gap: 5
-  }
 });

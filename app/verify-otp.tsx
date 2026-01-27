@@ -5,7 +5,6 @@ import {
   TextInput,
   TouchableOpacity,
   Alert,
-  StyleSheet,
   SafeAreaView,
 } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
@@ -57,13 +56,13 @@ const VerifyOtpScreen = () => {
   };
 
   return (
-    <SafeAreaView style={styles.container}>
-      <View style={styles.content}>
-        <Text style={styles.title}>XÁC THỰC OTP</Text>
-        <Text style={styles.subtitle}>Mã OTP đã được gửi đến: {email}</Text>
+    <SafeAreaView className="flex-1 bg-white justify-center p-5">
+      <View className="w-full max-w-[400px] self-center">
+        <Text className="text-2xl font-bold mb-2.5 text-center text-black">XÁC THỰC OTP</Text>
+        <Text className="text-sm text-[#666] mb-5 text-center">Mã OTP đã được gửi đến: {email}</Text>
 
         <TextInput
-          style={styles.input}
+          className="h-[50px] border border-[#ddd] rounded-lg px-[15px] mb-[15px] text-base"
           placeholder="Nhập mã OTP"
           value={otp}
           onChangeText={setOtp}
@@ -72,81 +71,23 @@ const VerifyOtpScreen = () => {
         />
 
         <TouchableOpacity 
-          style={[styles.button, loading && styles.buttonDisabled]} 
+          className={`bg-[#FF5A5F] h-[50px] rounded-lg justify-center items-center mt-2.5 mb-[15px] ${loading ? 'opacity-70' : ''}`}
           onPress={handleVerify}
           disabled={loading}
         >
-          <Text style={styles.buttonText}>{loading ? 'Đang xử lý...' : 'Xác thực'}</Text>
+          <Text className="text-white text-base font-bold">{loading ? 'Đang xử lý...' : 'Xác thực'}</Text>
         </TouchableOpacity>
 
-        <TouchableOpacity onPress={handleResendOtp} disabled={loading}>
-          <Text style={styles.linkText}>Gửi lại mã OTP</Text>
+        <TouchableOpacity onPress={handleResendOtp} disabled={loading} className="mt-4">
+          <Text className="text-[#FF5A5F] text-center text-[14px]">Gửi lại mã OTP</Text>
         </TouchableOpacity>
         
-        <TouchableOpacity onPress={() => router.back()} style={{marginTop: 20}}>
-          <Text style={styles.linkText}>Quay lại</Text>
+        <TouchableOpacity onPress={() => router.back()} className="mt-5">
+          <Text className="text-[#FF5A5F] text-center text-[14px]">Quay lại</Text>
         </TouchableOpacity>
       </View>
     </SafeAreaView>
   );
 };
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#fff',
-    justifyContent: 'center',
-    padding: 20,
-  },
-  content: {
-    width: '100%',
-    maxWidth: 400,
-    alignSelf: 'center',
-  },
-  title: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    marginBottom: 10,
-    textAlign: 'center',
-    color: '#000',
-  },
-  subtitle: {
-    fontSize: 14,
-    color: '#666',
-    marginBottom: 20,
-    textAlign: 'center',
-  },
-  input: {
-    height: 50,
-    borderWidth: 1,
-    borderColor: '#ddd',
-    borderRadius: 8,
-    paddingHorizontal: 15,
-    marginBottom: 15,
-    fontSize: 16,
-  },
-  button: {
-    backgroundColor: '#FF5A5F',
-    height: 50,
-    borderRadius: 8,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginTop: 10,
-    marginBottom: 15,
-  },
-  buttonDisabled: {
-    opacity: 0.7,
-  },
-  buttonText: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: 'bold',
-  },
-  linkText: {
-    color: '#FF5A5F',
-    textAlign: 'center',
-    fontSize: 14,
-  },
-});
 
 export default VerifyOtpScreen;

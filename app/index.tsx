@@ -5,7 +5,6 @@ import {
   TextInput,
   TouchableOpacity,
   Alert,
-  StyleSheet,
   SafeAreaView,
   StatusBar,
   ScrollView 
@@ -71,25 +70,25 @@ const AuthScreen = () => {
   };
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView className="flex-1 bg-[#FFF0F6]">
       <StatusBar barStyle="dark-content" />
-      <ScrollView contentContainerStyle={styles.scrollContent}>
-      <View style={styles.card}>
-        <Text style={styles.title}>
+      <ScrollView contentContainerClassName="flex-grow justify-center p-5">
+      <View className="bg-white rounded-[22px] p-[26px] shadow-sm elevation-[6]">
+        <Text className="text-[26px] font-bold text-center text-[#B5838D] mb-[25px]">
           {isLogin ? 'ĐĂNG NHẬP' : 'ĐĂNG KÝ'}
         </Text>
 
         {!isLogin && (
           <>
             <TextInput
-              style={styles.input}
+              className="bg-[#FFF5F8] py-[14px] px-[16px] rounded-[14px] border border-[#F2C6CF] mb-[14px] text-[15px] text-[#333]"
               placeholder="Name"
               placeholderTextColor="#B5838D"
               value={name}
               onChangeText={setName}
             />
              <TextInput
-              style={styles.input}
+              className="bg-[#FFF5F8] py-[14px] px-[16px] rounded-[14px] border border-[#F2C6CF] mb-[14px] text-[15px] text-[#333]"
               placeholder="Gender (MALE/FEMALE)"
               placeholderTextColor="#B5838D"
               value={gender}
@@ -99,7 +98,7 @@ const AuthScreen = () => {
         )}
 
         <TextInput
-          style={styles.input}
+          className="bg-[#FFF5F8] py-[14px] px-[16px] rounded-[14px] border border-[#F2C6CF] mb-[14px] text-[15px] text-[#333]"
           placeholder="Email"
           placeholderTextColor="#B5838D"
           value={email}
@@ -109,7 +108,7 @@ const AuthScreen = () => {
         />
 
         <TextInput
-          style={styles.input}
+          className="bg-[#FFF5F8] py-[14px] px-[16px] rounded-[14px] border border-[#F2C6CF] mb-[14px] text-[15px] text-[#333]"
           placeholder="Password"
           placeholderTextColor="#B5838D"
           secureTextEntry
@@ -118,22 +117,22 @@ const AuthScreen = () => {
         />
 
         {isLogin && (
-          <TouchableOpacity onPress={() => router.push('/forgot-password')} style={{alignSelf: 'flex-end', marginBottom: 15 }}>
-            <Text style={{ color: '#E56B6F', fontSize: 14 }}>Forgot Password?</Text>
+          <TouchableOpacity onPress={() => router.push('/forgot-password')} className="self-end mb-[15px]">
+            <Text className="text-[#E56B6F] text-[14px]">Forgot Password?</Text>
           </TouchableOpacity>
         )}
 
-        <TouchableOpacity style={styles.button} onPress={handleAuthentication}>
-          <Text style={styles.buttonText}>
+        <TouchableOpacity className="bg-[#F28482] py-[15px] rounded-[16px] items-center mt-[10px]" onPress={handleAuthentication}>
+          <Text className="text-white text-[16px] font-bold tracking-[1px]">
             {isLogin ? 'LOGIN' : 'REGISTER'}
           </Text>
         </TouchableOpacity>
 
         <TouchableOpacity
           onPress={() => setIsLogin(!isLogin)}
-          style={{ marginTop: 18 }}
+          className="mt-[18px]"
         >
-          <Text style={styles.linkText}>
+          <Text className="text-center text-[#E56B6F] text-[14px] font-medium">
             {isLogin
               ? 'Chưa có tài khoản? Đăng ký ngay'
               : 'Đã có tài khoản? Đăng nhập'}
@@ -146,69 +145,3 @@ const AuthScreen = () => {
 };
 
 export default AuthScreen;
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#FFF0F6',
-    // justifyContent: 'center', // Moved to scrollContent
-    // padding: 20, // Moved to scrollContent
-  },
-  scrollContent: {
-    flexGrow: 1,
-    justifyContent: 'center',
-    padding: 20,
-  },
-  card: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 22,
-    padding: 26,
-    shadowColor: '#000',
-    shadowOpacity: 0.12,
-    shadowRadius: 12,
-    shadowOffset: { width: 0, height: 6 },
-    elevation: 6,
-  },
-
-  title: {
-    fontSize: 26,
-    fontWeight: '700',
-    textAlign: 'center',
-    color: '#B5838D',
-    marginBottom: 25,
-  },
-
-  input: {
-    backgroundColor: '#FFF5F8',
-    paddingVertical: 14,
-    paddingHorizontal: 16,
-    borderRadius: 14,
-    borderWidth: 1,
-    borderColor: '#F2C6CF',
-    marginBottom: 14,
-    fontSize: 15,
-    color: '#333',
-  },
-
-  button: {
-    backgroundColor: '#F28482',
-    paddingVertical: 15,
-    borderRadius: 16,
-    alignItems: 'center',
-    marginTop: 10,
-  },
-
-  buttonText: {
-    color: '#FFFFFF',
-    fontSize: 16,
-    fontWeight: 'bold',
-    letterSpacing: 1,
-  },
-
-  linkText: {
-    textAlign: 'center',
-    color: '#E56B6F',
-    fontSize: 14,
-    fontWeight: '500',
-  },
-});
