@@ -1,12 +1,23 @@
+import axios, { AxiosError, AxiosRequestConfig, InternalAxiosRequestConfig } from 'axios';
 import { Platform } from 'react-native';
 import { getAccessToken, getRefreshToken, saveTokens, clearAuth } from '@/utils/storage';
 
 // Adjust for Android Emulator vs iOS Simulator vs Web
 export const API_URL = Platform.OS === 'android' ? 'http://10.0.2.2:8888/api/v1' : 'http://localhost:8888/api/v1';
 
-interface RequestConfig extends RequestInit {
-  headers?: any;
+export interface ApiResponse<T = any> {
+  status: number;
+  message: string;
+  data: T;
 }
+
+const apiClient = axios.create({
+  baseURL: API_URL,
+  headers: {
+    'Content-Type': 'application/json',
+  },
+  timeout: 10000,
+});
 
 let isRefreshing = false;
 let failedQueue: any[] = [];
@@ -23,142 +34,120 @@ const processQueue = (error: any, token: string | null = null) => {
   failedQueue = [];
 };
 
-export const fetchWithAuth = async (endpoint: string, config: RequestConfig = {}) => {
-  const url = `${API_URL}${endpoint}`;
-  let token = await getAccessToken();
+// Request Interceptor
+apiClient.interceptors.request.use(
+  async (config: InternalAxiosRequestConfig) => {
+    const token = await getAccessToken();
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
+    }
+    return config;
+  },
+  (error) => {
+    return Promise.reject(error);
+  }
+);
 
-  const headers = {
-    'Content-Type': 'application/json',
-    ...(token ? { Authorization: `Bearer ${token}` } : {}),
-    ...config.headers,
-  };
+// Response Interceptor
+apiClient.interceptors.response.use(
+  (response) => {
+    return response;
+  },
+  async (error: AxiosError) => {
+    const originalRequest = error.config as InternalAxiosRequestConfig & { _retry?: boolean };
 
-  try {
-    let response = await fetch(url, { ...config, headers });
+    // Prevent infinite loops and handle missing config
+    if (!originalRequest) {
+        return Promise.reject(error);
+    }
 
-    // Handle 401 Unauthorized (Token expired)
-    if (response.status === 401) {
+    if (error.response?.status === 401 && !originalRequest._retry) {
       if (isRefreshing) {
         return new Promise(function (resolve, reject) {
           failedQueue.push({ resolve, reject });
         })
-          .then((newToken) => {
-            return fetch(url, {
-              ...config,
-              headers: { ...headers, Authorization: `Bearer ${newToken}` },
-            });
+          .then((token) => {
+            originalRequest.headers.Authorization = `Bearer ${token}`;
+            return apiClient(originalRequest);
           })
           .catch((err) => {
             return Promise.reject(err);
           });
       }
 
-      // Start refreshing token
+      originalRequest._retry = true;
       isRefreshing = true;
-      const refreshToken = await getRefreshToken();
-
-      if (!refreshToken) {
-        // No refresh token, force logout
-        await clearAuth();
-        // You might want to trigger a redirect here or handle it in the UI
-        return response; 
-      }
 
       try {
-        const refreshResponse = await fetch(`${API_URL}/auth/refresh-token`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ token: refreshToken }),
-        });
+        const refreshToken = await getRefreshToken();
 
-        const refreshData = await refreshResponse.json();
+        if (!refreshToken) {
+           throw new Error('No refresh token');
+        }
 
-        if (refreshResponse.ok && refreshData.data && refreshData.data.token) {
-          // Assuming structure is data.token.accessToken/refreshToken based on user sample
-          // Or user sample says: data: { token: { accessToken: "...", refreshToken: "..." } }
-          // Actually user sample for refresh token response is NOT explicitly given, 
-          // but login response has data.token.accessToken.
-          // Let's assume refresh endpoint returns similar structure or at least new accessToken.
-          
-          // User request body for refresh-token: { token: "..." }
-          // Let's assume response is standard success response
-          
-          const newAccessToken = refreshData.data.token?.accessToken || refreshData.data.accessToken; 
-          const newRefreshToken = refreshData.data.token?.refreshToken || refreshData.data.refreshToken || refreshToken;
+        const response = await axios.post(`${API_URL}/auth/refresh-token`, { token: refreshToken });
+        const { data } = response;
 
-          if (newAccessToken) {
+        if (data && data.data && data.data.accessToken) {
+            const newAccessToken = data.data.accessToken;
+            const newRefreshToken = data.data.refreshToken || refreshToken;
+
             await saveTokens(newAccessToken, newRefreshToken);
-            processQueue(null, newAccessToken);
             
-            // Retry original request
-            return fetch(url, {
-              ...config,
-              headers: { ...headers, Authorization: `Bearer ${newAccessToken}` },
-            });
-          } else {
-             throw new Error('No access token in refresh response');
-          }
+            apiClient.defaults.headers.common['Authorization'] = `Bearer ${newAccessToken}`;
+            processQueue(null, newAccessToken);
+
+            originalRequest.headers.Authorization = `Bearer ${newAccessToken}`;
+            return apiClient(originalRequest);
         } else {
-          throw new Error('Refresh failed');
+             throw new Error('Refresh failed');
         }
       } catch (err) {
         processQueue(err, null);
         await clearAuth();
-        throw err;
+        return Promise.reject(err);
       } finally {
         isRefreshing = false;
       }
     }
-
-    return response;
-  } catch (error) {
-    throw error;
+    
+    // Standardize error message to return string if possible or keep error object
+    // But userService expects to catch error
+    const errorMessage = (error.response?.data as any)?.message || error.message || 'Network Error';
+    // Throwing just message might lose context, but UI usually wants message.
+    // Let's attach message to error object
+    if (error.response && error.response.data && typeof (error as any).response.data === 'object') {
+         // (error as any).message = (error.response.data as any).message;
+    }
+    return Promise.reject(errorMessage); 
   }
-};
+);
+
+export default apiClient;
 
 export const authService = {
   login: async (email, password) => {
-    const response = await fetch(`${API_URL}/auth/login`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password }),
-    });
-    return response.json();
+    const response = await apiClient.post('/auth/login', { email, password });
+    return response.data;
   },
   
   register: async (name, email, password, gender) => {
-    const response = await fetch(`${API_URL}/auth/register`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name, email, password, gender }),
-    });
-    return response.json();
+    const response = await apiClient.post('/auth/register', { name, email, password, gender });
+    return response.data;
   },
 
   verifyOtp: async (email, otp) => {
-      const response = await fetch(`${API_URL}/auth/verify-otp`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ email, otp }),
-      });
-      return response.json();
+      const response = await apiClient.post('/auth/verify-otp', { email, otp });
+      return response.data;
   },
 
   sendOtp: async (email) => {
-     const response = await fetch(`${API_URL}/auth/send-otp`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ email }),
-      });
-      return response.json();
+     const response = await apiClient.post('/auth/send-otp', { email });
+     return response.data;
   },
 
   resetPassword: async (email, otp, newPassword) => {
-      const response = await fetch(`${API_URL}/auth/reset-password`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ email, otp, newPassword }),
-      });
-      return response.json();
+      const response = await apiClient.post('/auth/reset-password', { email, otp, newPassword });
+      return response.data;
   }
 };
