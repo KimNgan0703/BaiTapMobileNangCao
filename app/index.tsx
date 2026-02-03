@@ -12,9 +12,12 @@ import {
 import { useRouter } from 'expo-router';
 import { authService } from '@/services/api';
 import { saveTokens, saveUser } from '@/utils/storage';
+import { useAppDispatch } from '@/store/hooks';
+import { fetchUserProfile } from '@/store/slices/authSlice';
 
 const AuthScreen = () => {
   const router = useRouter();
+  const dispatch = useAppDispatch();
   const [isLogin, setIsLogin] = useState(true);
 
   // Requirement: name, email, password, gender
@@ -41,11 +44,26 @@ const AuthScreen = () => {
         console.log('Login response:', data);
         
         if (data.success) {
-          const { token, user } = data.data;
-          await saveTokens(token.accessToken, token.refreshToken);
-          await saveUser(user);
-          Alert.alert('Thành công', 'Đăng nhập thành công');
-          router.replace('/(tabs)');
+          const { accessToken, refreshToken } = data.data;
+          await saveTokens(accessToken, refreshToken);
+          
+          try {
+            const resultAction = await dispatch(fetchUserProfile());
+            if (fetchUserProfile.fulfilled.match(resultAction)) {
+               const user = resultAction.payload;
+               await saveUser(user);
+               Alert.alert('Thành công', 'Đăng nhập thành công');
+               router.replace('/(tabs)');
+            } else {
+               // Token valid but profile fetch failed
+               console.warn('Fetch profile failed', resultAction.payload);
+               Alert.alert('Thành công', 'Đăng nhập thành công (offline mode)');
+               router.replace('/(tabs)');
+            }
+          } catch (e) {
+             console.error('Profile fetch error', e);
+             router.replace('/(tabs)'); 
+          }
         } else {
           if (data.message === 'User email is not verified') {
             Alert.alert('Thông báo', 'Email chưa được xác thực. Vui lòng xác thực OTP.');

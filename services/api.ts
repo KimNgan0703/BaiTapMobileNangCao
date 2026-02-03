@@ -3,16 +3,27 @@ import { Platform } from 'react-native';
 import { getAccessToken, getRefreshToken, saveTokens, clearAuth } from '@/utils/storage';
 
 // Adjust for Android Emulator vs iOS Simulator vs Web
-export const API_URL = Platform.OS === 'android' ? 'http://10.0.2.2:8888/api/v1' : 'http://localhost:8888/api/v1';
+const HOST = Platform.OS === 'android' ? 'http://10.0.2.2' : 'http://localhost';
+
+export const AUTH_API_URL = `${HOST}:8888/api/v1`;
+export const COURSE_API_URL = `${HOST}:8081/api/v1`;
+export const USER_API_URL = `${HOST}:8089/api/v1`;
 
 export interface ApiResponse<T = any> {
-  status: number;
+  status: number; // or success: boolean depending on new format? User showed "success": true
+  success?: boolean; 
   message: string;
   data: T;
+  meta?: {
+    page: number;
+    limit: number;
+    totalElements: number;
+    totalPages: number;
+  }
 }
 
 const apiClient = axios.create({
-  baseURL: API_URL,
+  baseURL: AUTH_API_URL,
   headers: {
     'Content-Type': 'application/json',
   },
@@ -85,7 +96,7 @@ apiClient.interceptors.response.use(
            throw new Error('No refresh token');
         }
 
-        const response = await axios.post(`${API_URL}/auth/refresh-token`, { token: refreshToken });
+        const response = await axios.post(`${AUTH_API_URL}/auth/refresh-token`, { token: refreshToken });
         const { data } = response;
 
         if (data && data.data && data.data.accessToken) {

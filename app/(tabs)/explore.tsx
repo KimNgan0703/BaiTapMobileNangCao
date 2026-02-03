@@ -1,112 +1,158 @@
-import { Image } from 'expo-image';
-import { Platform, StyleSheet } from 'react-native';
-
-import { Collapsible } from '@/components/ui/collapsible';
-import { ExternalLink } from '@/components/external-link';
-import ParallaxScrollView from '@/components/parallax-scroll-view';
+import React, { useEffect, useState } from 'react';
+import { StyleSheet, FlatList, TextInput, View, ActivityIndicator, TouchableOpacity, RefreshControl, Platform } from 'react-native';
+import { useRouter } from 'expo-router';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
-import { IconSymbol } from '@/components/ui/icon-symbol';
-import { Fonts } from '@/constants/theme';
+import { courseService, Course } from '@/services/courseService';
 
-export default function TabTwoScreen() {
+export default function ExploreScreen() {
+  const router = useRouter();
+  const [courses, setCourses] = useState<Course[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [page, setPage] = useState(1);
+  const [hasMore, setHasMore] = useState(true);
+  const [query, setQuery] = useState('');
+  const [refreshing, setRefreshing] = useState(false);
+
+  const fetchCourses = async (reset = false) => {
+    if (loading && !reset) return;
+    setLoading(true);
+    try {
+      const pageToFetch = reset ? 1 : page;
+      const data = await courseService.getCourses(query, pageToFetch, 10);
+      
+      const newCourses = data.data || [];
+      const meta = data.meta;
+      
+      if (reset) {
+          setCourses(newCourses);
+          setPage(2);
+      } else {
+          setCourses(prev => [...prev, ...newCourses]);
+          setPage(prev => prev + 1);
+      }
+
+      if (meta) {
+          if (pageToFetch >= meta.totalPages) {
+              setHasMore(false);
+          } else {
+              setHasMore(true);
+          }
+      } else {
+          if (newCourses.length < 10) setHasMore(false);
+      }
+
+    } catch (error) {
+      console.error('Fetch courses error:', error);
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchCourses(true);
+  }, []); 
+
+  const handleSearch = () => {
+    fetchCourses(true);
+  };
+
+  const onRefresh = () => {
+      setRefreshing(true);
+      fetchCourses(true);
+  }
+
+  const renderItem = ({ item }: { item: Course }) => (
+    <View style={styles.card}>
+          <ThemedText type="defaultSemiBold">{item.title}</ThemedText>
+          <ThemedText numberOfLines={2}>{item.description}</ThemedText>
+          <View style={styles.row}>
+            <ThemedText style={{ color: '#4CAF50' }}>{item.price.toLocaleString()} VND</ThemedText>
+            <ThemedText style={{ fontSize: 12, color: '#888' }}>{item.duration} mins</ThemedText>
+          </View>
+    </View>
+  );
+
   return (
-    <ParallaxScrollView
-      headerBackgroundColor={{ light: '#D0D0D0', dark: '#353636' }}
-      headerImage={
-        <IconSymbol
-          size={310}
-          color="#808080"
-          name="chevron.left.forwardslash.chevron.right"
-          style={styles.headerImage}
-        />
-      }>
-      <ThemedView className="flex-row gap-2">
-        <ThemedText
-          type="title"
-          style={{
-            fontFamily: Fonts.rounded,
-          }}>
-          Explore
-        </ThemedText>
-      </ThemedView>
-      <ThemedText>This app includes example code to help you get started.</ThemedText>
-      <Collapsible title="File-based routing">
-        <ThemedText>
-          This app has two screens:{' '}
-          <ThemedText type="defaultSemiBold">app/(tabs)/index.tsx</ThemedText> and{' '}
-          <ThemedText type="defaultSemiBold">app/(tabs)/explore.tsx</ThemedText>
-        </ThemedText>
-        <ThemedText>
-          The layout file in <ThemedText type="defaultSemiBold">app/(tabs)/_layout.tsx</ThemedText>{' '}
-          sets up the tab navigator.
-        </ThemedText>
-        <ExternalLink href="https://docs.expo.dev/router/introduction">
-          <ThemedText type="link">Learn more</ThemedText>
-        </ExternalLink>
-      </Collapsible>
-      <Collapsible title="Android, iOS, and web support">
-        <ThemedText>
-          You can open this project on Android, iOS, and the web. To open the web version, press{' '}
-          <ThemedText type="defaultSemiBold">w</ThemedText> in the terminal running this project.
-        </ThemedText>
-      </Collapsible>
-      <Collapsible title="Images">
-        <ThemedText>
-          For static images, you can use the <ThemedText type="defaultSemiBold">@2x</ThemedText> and{' '}
-          <ThemedText type="defaultSemiBold">@3x</ThemedText> suffixes to provide files for
-          different screen densities
-        </ThemedText>
-        <Image
-          source={require('@/assets/images/react-logo.png')}
-          style={{ width: 100, height: 100, alignSelf: 'center' }}
-        />
-        <ExternalLink href="https://reactnative.dev/docs/images">
-          <ThemedText type="link">Learn more</ThemedText>
-        </ExternalLink>
-      </Collapsible>
-      <Collapsible title="Light and dark mode components">
-        <ThemedText>
-          This template has light and dark mode support. The{' '}
-          <ThemedText type="defaultSemiBold">useColorScheme()</ThemedText> hook lets you inspect
-          what the user&apos;s current color scheme is, and so you can adjust UI colors accordingly.
-        </ThemedText>
-        <ExternalLink href="https://docs.expo.dev/develop/user-interface/color-themes/">
-          <ThemedText type="link">Learn more</ThemedText>
-        </ExternalLink>
-      </Collapsible>
-      <Collapsible title="Animations">
-        <ThemedText>
-          This template includes an example of an animated component. The{' '}
-          <ThemedText type="defaultSemiBold">components/HelloWave.tsx</ThemedText> component uses
-          the powerful{' '}
-          <ThemedText type="defaultSemiBold" style={{ fontFamily: Fonts.mono }}>
-            react-native-reanimated
-          </ThemedText>{' '}
-          library to create a waving hand animation.
-        </ThemedText>
-        {Platform.select({
-          ios: (
-            <ThemedText>
-              The <ThemedText type="defaultSemiBold">components/ParallaxScrollView.tsx</ThemedText>{' '}
-              component provides a parallax effect for the header image.
-            </ThemedText>
-          ),
-        })}
-      </Collapsible>
-    </ParallaxScrollView>
+    <ThemedView style={styles.container}>
+       <View style={styles.header}>
+            <ThemedText type="title">Explore Courses</ThemedText>
+       </View>
+       <View style={styles.searchContainer}>
+           <TextInput 
+              style={[styles.input, { color: 'black' }]} 
+              placeholder="Search courses..." 
+              placeholderTextColor="#999"
+              value={query} 
+              onChangeText={setQuery}
+              onSubmitEditing={handleSearch}
+           />
+           <TouchableOpacity onPress={handleSearch} style={styles.searchButton}>
+               <ThemedText>Search</ThemedText>
+           </TouchableOpacity>
+       </View>
+       
+       <FlatList
+          data={courses}
+          renderItem={renderItem}
+          keyExtractor={(item) => item.id}
+          onEndReached={() => {
+              if (hasMore && !loading) {
+                  fetchCourses(false);
+              }
+          }}
+          onEndReachedThreshold={0.5}
+          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
+          ListFooterComponent={loading ? <ActivityIndicator size="large" color="#0000ff" /> : null}
+          contentContainerStyle={{ padding: 16 }}
+       />
+    </ThemedView>
   );
 }
 
 const styles = StyleSheet.create({
-  headerImage: {
-    color: '#808080',
-    bottom: -90,
-    left: -35,
-    position: 'absolute',
+  container: {
+    flex: 1,
   },
-  // titleContainer: { // Removed
-  //   flexDirection: 'row',
-  //   gap: 8,
-  // },
+  header: {
+    paddingTop: Platform.OS === 'android' ? 40 : 60,
+    paddingHorizontal: 16,
+    paddingBottom: 10,
+  },
+  searchContainer: {
+      flexDirection: 'row',
+      paddingHorizontal: 16,
+      paddingBottom: 10,
+      gap: 10,
+      alignItems: 'center'
+  },
+  input: {
+      flex: 1,
+      backgroundColor: '#f0f0f0',
+      paddingVertical: 10,
+      paddingHorizontal: 15,
+      borderRadius: 10,
+      height: 44,
+  },
+  searchButton: {
+      justifyContent: 'center',
+      paddingVertical: 10,
+      paddingHorizontal: 15,
+      backgroundColor: '#007AFF', // Blue
+      borderRadius: 10,
+  },
+  card: {
+      padding: 16,
+      backgroundColor: 'rgba(255,255,255,0.05)', 
+      marginBottom: 12,
+      borderRadius: 12,
+      borderWidth: 1,
+      borderColor: 'rgba(128,128,128,0.2)'
+  },
+  row: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      marginTop: 8
+  }
 });

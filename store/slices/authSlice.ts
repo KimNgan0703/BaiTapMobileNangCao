@@ -34,9 +34,12 @@ export const fetchUserProfile = createAsyncThunk(
   'auth/fetchUserProfile',
   async (_, { rejectWithValue }) => {
     try {
-      // apiClient returns AxiosResponse, .data is the server response body (ApiResponse)
-      const response = await apiClient.get<ApiResponse<User>>('/users/me');
-      return response.data.data; // response.data is ApiResponse, data is User
+      const data = await userService.getMe();
+      // data is ApiResponse, but UserService.getMe returns ApiResponse. 
+      // User service: response.data which is ApiResponse.
+      // And api.ts says ApiResponse has { status, message, data: T }.
+      // So data.data is the User object.
+      return data.data; 
     } catch (error: any) {
         return rejectWithValue(error || 'Network Error');
     }
