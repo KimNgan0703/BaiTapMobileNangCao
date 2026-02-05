@@ -1,26 +1,57 @@
-import apiClient, { ApiResponse, COURSE_API_URL } from './api';
+import apiClient, { ApiResponse, HOST } from './api';
 
 export interface Course {
   id: string;
   title: string;
   description: string;
-  category: string | null;
+  category: string;
   price: number;
+  discountedPrice: number | null;
+  rating: number;
+  enrolmentCount: number;
+  isPublished: boolean;
+  isInSubscription: boolean;
   duration: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface Category {
+  id: string;
+  name: string;
+}
+
+export interface CourseParams {
+  query?: string;
+  page?: number;
+  size?: number;
+  sort?: string; // JSON string like '{"createdAt":"desc"}'
+  category?: string;
 }
 
 export const courseService = {
-  getCourses: async (query: string = '', page: number = 0, size: number = 10) => {
-    // Note: User prompt has page=1 in URL example but meta response has page: 0. 
-    // Usually APIs are 0-indexed or 1-indexed. I'll pass what defines.
-    const response = await apiClient.get<ApiResponse<Course[]>>(`${COURSE_API_URL}/courses`, {
-      params: { query, page, size }
+  getCourses: async (params: CourseParams = {}) => {
+    // Determine sort string. Using provided format or defaults.
+    const { query, page = 1, size = 10, sort, category } = params;
+    const response = await apiClient.get<ApiResponse<Course[]>>('/courses', {
+      params: { 
+        query, 
+        page, 
+        size, 
+        sort,
+        ...(category && { category }) 
+      }
     });
     return response.data;
   },
 
+  getCategories: async () => {
+    const response = await apiClient.get<ApiResponse<Category[]>>('/categories');
+    return response.data;
+  },
+
   getCourseById: async (id: string) => {
-    const response = await apiClient.get<ApiResponse<Course>>(`${COURSE_API_URL}/courses/${id}`);
+    const response = await apiClient.get<ApiResponse<Course>>(`/courses/${id}`);
     return response.data;
   }
 };

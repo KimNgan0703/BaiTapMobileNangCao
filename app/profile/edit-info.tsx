@@ -89,7 +89,7 @@ export default function EditInfoScreen() {
         <View style={styles.avatarContainer}>
             <TouchableOpacity onPress={pickImage} style={styles.avatarWrapper}>
                 {getAvatarSource() ? (
-                    <Image source={getAvatarSource()} style={styles.avatarImage} />
+                    <Image source={getAvatarSource() ?? undefined} style={styles.avatarImage} />
                 ) : (
                     <View style={styles.avatarPlaceholder}>
                          <IconSymbol name="camera.fill" size={30} color={COLORS.white} />
