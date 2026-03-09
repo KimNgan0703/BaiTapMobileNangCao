@@ -5,6 +5,18 @@ import { getAccessToken, getRefreshToken, saveTokens, clearAuth } from '@/utils/
 // Adjust for Android Emulator vs iOS Simulator vs Web
 export const HOST = Platform.OS === 'android' ? 'http://10.0.2.2:9090/api/v1' : 'http://localhost:9090/api/v1';
 
+/**
+ * Normalize a URL returned by the backend (which always uses localhost)
+ * so it works on Android emulator (needs 10.0.2.2 instead of localhost).
+ */
+export const normalizeImageUrl = (url?: string | null): string | null => {
+  if (!url) return null;
+  if (Platform.OS === 'android') {
+    return url.replace('http://localhost', 'http://10.0.2.2');
+  }
+  return url;
+};
+
 export interface ApiResponse<T = any> {
   success: boolean;
   message: string;
@@ -132,27 +144,27 @@ apiClient.interceptors.response.use(
 export default apiClient;
 
 export const authService = {
-  login: async (email, password) => {
+  login: async (email: string, password: string) => {
     const response = await apiClient.post('/auth/login', { email, password });
     return response.data;
   },
   
-  register: async (name, email, password, gender) => {
+  register: async (name: string, email: string, password: string, gender: string) => {
     const response = await apiClient.post('/auth/register', { name, email, password, gender });
     return response.data;
   },
 
-  verifyOtp: async (email, otp) => {
+  verifyOtp: async (email: string, otp: string) => {
       const response = await apiClient.post('/auth/verify-otp', { email, otp });
       return response.data;
   },
 
-  sendOtp: async (email) => {
+  sendOtp: async (email: string) => {
      const response = await apiClient.post('/auth/send-otp', { email });
      return response.data;
   },
 
-  resetPassword: async (email, otp, newPassword) => {
+  resetPassword: async (email: string, otp: string, newPassword: string) => {
       const response = await apiClient.post('/auth/reset-password', { email, otp, newPassword });
       return response.data;
   }

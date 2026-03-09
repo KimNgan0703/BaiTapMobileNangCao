@@ -13,7 +13,7 @@ import { useRouter } from 'expo-router';
 import { authService } from '@/services/api';
 import { saveTokens, saveUser } from '@/utils/storage';
 import { useAppDispatch } from '@/store/hooks';
-import { fetchUserProfile } from '@/store/slices/authSlice';
+import { fetchUserProfile, setLoggedIn } from '@/store/slices/authSlice';
 
 const AuthScreen = () => {
   const router = useRouter();
@@ -46,6 +46,7 @@ const AuthScreen = () => {
         if (data.success) {
           const { accessToken, refreshToken } = data.data;
           await saveTokens(accessToken, refreshToken);
+          dispatch(setLoggedIn(true));
           
           try {
             const resultAction = await dispatch(fetchUserProfile());

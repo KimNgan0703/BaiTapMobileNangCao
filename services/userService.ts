@@ -1,3 +1,4 @@
+import { Platform } from 'react-native';
 import apiClient, { ApiResponse, HOST } from './api';
 
 interface UpdateProfileData {
@@ -25,31 +26,37 @@ export const userService = {
       return response.data;
   },
   
-  updateProfile: async (id: number | string, data: UpdateProfileData): Promise<ApiResponse> => {
+  updateProfile: async (id: string, data: UpdateProfileData): Promise<ApiResponse> => {
     const formData = new FormData();
-    
-    // Append JSON data as a string for the 'user' part
-    formData.append('user', JSON.stringify({
-        name: data.name,
-        gender: data.gender
-    }));
 
-    // Append Avatar file if present
-    if (data.avatarUri) {
-        const uriParts = data.avatarUri.split('.');
-        const fileType = uriParts[uriParts.length - 1];
-        
-        formData.append('avatar', {
-            uri: data.avatarUri,
-            name: `avatar.${fileType}`,
-            type: `image/${fileType}`,
-        } as any);
+    const { avatarUri, ...profileData } = data;
+
+    formData.append("name", profileData.name);
+    formData.append("phone", profileData.gender);
+
+  if (avatarUri) {
+
+    // WEB
+    if (Platform.OS === "web") {
+      const response = await fetch(avatarUri);
+      const blob = await response.blob();
+      formData.append("avatar", blob, "avatar.jpg");
     }
 
+    // ANDROID + IOS
+    else {
+      const fileType = avatarUri.split('.').pop()?.split('?')[0] || 'jpg';
+
+      formData.append("avatar", {
+        uri: avatarUri,
+        name: `avatar.${fileType}`,
+        type: `image/${fileType}`,
+      } as any);
+    }
+  }
+
     const response = await apiClient.put<ApiResponse>(`${HOST}/users/${id}`, formData, {
-        headers: {
-            'Content-Type': 'multipart/form-data',
-        },
+      headers: { 'Content-Type': 'multipart/form-data' },
     });
     return response.data;
   },

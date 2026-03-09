@@ -7,6 +7,8 @@ export interface Course {
   category: string;
   price: number;
   discountedPrice: number | null;
+  discountRate?: number | null;
+  thumbnailUrl?: string | null;
   rating: number;
   enrolmentCount: number;
   isPublished: boolean;

@@ -7,6 +7,7 @@ import * as ImagePicker from 'expo-image-picker';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
 import { updateUserInfo } from '@/store/slices/authSlice';
 import { IconSymbol } from '@/components/ui/icon-symbol';
+import { normalizeImageUrl } from '@/services/api';
 
 // Color Palette from Auth Screen
 const COLORS = {
@@ -28,7 +29,7 @@ export default function EditInfoScreen() {
   const dispatch = useAppDispatch();
   const { user } = useAppSelector((state) => state.auth);
 
-  const [name, setName] = useState(user?.name || user?.firstName || '');
+  const [name, setName] = useState(user?.name || '');
   const [gender, setGender] = useState(user?.gender || 'MALE');
   const [newAvatarUri, setNewAvatarUri] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
@@ -47,18 +48,18 @@ export default function EditInfoScreen() {
   };
 
   const handleSave = async () => {
-    if (!user?.id) {
+    if (!user?.userId) {
         Alert.alert('Error', 'User ID not found');
         return;
     }
     setLoading(true);
     try {
-      const apiData: any = { name, gender };
+      const apiData: { name: string; gender: string; avatarUri?: string } = { name, gender };
       if (newAvatarUri) {
           apiData.avatarUri = newAvatarUri;
       }
       
-      await dispatch(updateUserInfo({ id: user.id, data: apiData })).unwrap();
+      await dispatch(updateUserInfo({ id: user.userId, data: apiData })).unwrap();
       
       Alert.alert('Success', 'Profile updated successfully');
       router.back();
@@ -71,7 +72,7 @@ export default function EditInfoScreen() {
 
   const getAvatarSource = () => {
       if (newAvatarUri) return { uri: newAvatarUri };
-      if (user?.avatar) return { uri: user.avatar }; 
+      if (user?.avatarUrl) return { uri: normalizeImageUrl(user.avatarUrl)! };
       return null;
   };
 

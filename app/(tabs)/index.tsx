@@ -14,12 +14,16 @@ import {
   ListRenderItem
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useRouter } from 'expo-router';
 
 import { HelloWave } from '@/components/hello-wave';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
 import { fetchUserProfile } from '@/store/slices/authSlice';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { courseService, Course, Category } from '@/services/courseService';
+import { normalizeImageUrl } from '@/services/api';
+
+const COURSE_PLACEHOLDER = require('@/assets/images/react-logo.png');
 
 const { width } = Dimensions.get('window');
 const COLUMN_WIDTH = (width - 60) / 2;
@@ -41,6 +45,7 @@ const COLORS = {
 export default function HomeScreen() {
   const { user } = useAppSelector((state) => state.auth);
   const dispatch = useAppDispatch();
+  const router = useRouter();
   
   const [searchQuery, setSearchQuery] = useState('');
   const [categories, setCategories] = useState<Category[]>([]);
@@ -48,6 +53,9 @@ export default function HomeScreen() {
   const [discountedCourses, setDiscountedCourses] = useState<Course[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [discountPage, setDiscountPage] = useState(1);
+  const [hasMoreDiscounts, setHasMoreDiscounts] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
 
   useEffect(() => {
     dispatch(fetchUserProfile());
@@ -64,22 +72,53 @@ export default function HomeScreen() {
       // Fetch Best Sellers (Top 10 by enrolmentCount)
       const bestSellersData = await courseService.getCourses({
         size: 10,
-        sort: '{"enrolmentCount":"desc"}'
+        sort: '{"enrollmentCount":"desc"}'
       });
       setBestSellers(bestSellersData.data || []);
 
-      // Fetch Discounted Products (20 sorted by discountedPrice or similar)
+      // Fetch Discounted Products (first page)
       const discountedData = await courseService.getCourses({
-        size: 20,
-        sort: '{"discountedPrice":"asc"}'
+        size: 10,
+        page: 1,
+        sort: '{"discountRate":"desc"}'
       });
       setDiscountedCourses(discountedData.data || []);
+      setDiscountPage(2);
+      if (discountedData.meta) {
+        setHasMoreDiscounts(1 < discountedData.meta.totalPages);
+      } else {
+        setHasMoreDiscounts((discountedData.data || []).length >= 10);
+      }
 
     } catch (error) {
       console.error("Failed to load home data", error);
     } finally {
       setLoading(false);
       setRefreshing(false);
+    }
+  };
+
+  const loadMoreDiscounts = async () => {
+    if (loadingMore || !hasMoreDiscounts) return;
+    try {
+      setLoadingMore(true);
+      const discountedData = await courseService.getCourses({
+        size: 10,
+        page: discountPage,
+        sort: '{"discountedPrice":"asc"}'
+      });
+      const newCourses = discountedData.data || [];
+      setDiscountedCourses(prev => [...prev, ...newCourses]);
+      setDiscountPage(prev => prev + 1);
+      if (discountedData.meta) {
+        setHasMoreDiscounts(discountPage < discountedData.meta.totalPages);
+      } else {
+        setHasMoreDiscounts(newCourses.length >= 10);
+      }
+    } catch (error) {
+      console.error("Failed to load more discounts", error);
+    } finally {
+      setLoadingMore(false);
     }
   };
 
@@ -95,11 +134,13 @@ export default function HomeScreen() {
   );
 
   const renderBestSellerItem = ({ item }: { item: Course }) => (
-    <View style={styles.bestSellerCard}>
+    <TouchableOpacity 
+      style={styles.bestSellerCard}
+      onPress={() => router.push({ pathname: '/course-detail' as any, params: { id: item.id } })}
+    >
       <View style={styles.bestSellerImageContainer}>
-        {/* Placeholder image since API doesn't seem to return image URL yet */}
         <Image 
-          source={{ uri: 'https://reactnative.dev/img/tiny_logo.png' }} 
+          source={item.thumbnailUrl ? { uri: normalizeImageUrl(item.thumbnailUrl)! } : COURSE_PLACEHOLDER}
           style={styles.courseImage} 
         />
       </View>
@@ -108,17 +149,20 @@ export default function HomeScreen() {
           <Text style={styles.bestSellerCategory}>{item.category || 'General'}</Text>
           <View style={styles.bestSellerFooter}>
             <Text style={styles.enrolmentText}>{item.enrolmentCount} students</Text>
-            <Text style={styles.price}>${item.price}</Text>
+            <Text style={styles.price}>{item.price.toLocaleString('vi-VN')}đ</Text>
           </View>
       </View>
-    </View>
+    </TouchableOpacity>
   );
 
   const renderDiscountedItem: ListRenderItem<Course> = ({ item }) => (
-    <View style={styles.gridCard}>
+    <TouchableOpacity 
+      style={styles.gridCard}
+      onPress={() => router.push({ pathname: '/course-detail' as any, params: { id: item.id } })}
+    >
       <View style={styles.gridImageContainer}>
         <Image 
-          source={{ uri: 'https://reactnative.dev/img/tiny_logo.png' }} 
+          source={item.thumbnailUrl ? { uri: normalizeImageUrl(item.thumbnailUrl)! } : COURSE_PLACEHOLDER}
           style={styles.courseImage} 
         />
         {item.discountedPrice && (
@@ -133,18 +177,18 @@ export default function HomeScreen() {
           <View style={styles.priceRow}>
               {item.discountedPrice ? (
                   <>
-                      <Text style={styles.discountedPrice}>${item.discountedPrice}</Text>
-                      <Text style={styles.originalPrice}>${item.price}</Text>
+                      <Text style={styles.discountedPrice}>{item.discountedPrice.toLocaleString('vi-VN')}đ</Text>
+                      <Text style={styles.originalPrice}>{item.price.toLocaleString('vi-VN')}đ</Text>
                   </>
               ) : (
-                  <Text style={styles.price}>${item.price}</Text>
+                  <Text style={styles.price}>{item.price.toLocaleString('vi-VN')}đ</Text>
               )}
           </View>
-          <TouchableOpacity style={styles.enrollButton}>
-              <Text style={styles.enrollText}>Enroll</Text>
+          <TouchableOpacity style={styles.enrollButton} onPress={() => router.push({ pathname: '/course-detail' as any, params: { id: item.id } })}>
+              <Text style={styles.enrollText}>Xem chi tiết</Text>
           </TouchableOpacity>
       </View>
-    </View>
+    </TouchableOpacity>
   );
 
   const ListHeader = () => (
@@ -153,13 +197,18 @@ export default function HomeScreen() {
         <View>
             <Text style={styles.greeting}>Hello,</Text>
             <View style={styles.nameContainer}>
-                <Text style={styles.userName}>{user?.firstName || user?.name || 'Learner'}!</Text>
+                <Text style={styles.userName}>{user?.name || 'Learner'}!</Text>
                 <HelloWave />
             </View>
         </View>
-        <TouchableOpacity style={styles.profileButton}>
+        <View style={{ flexDirection: 'row', gap: 12 }}>
+          <TouchableOpacity onPress={() => router.push('/cart' as any)}>
+            <IconSymbol name="cart.fill" size={28} color={COLORS.button} />
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.profileButton}>
             <IconSymbol name="person.circle.fill" size={40} color={COLORS.button} />
-        </TouchableOpacity>
+          </TouchableOpacity>
+        </View>
       </View>
 
       <View style={styles.searchContainer}>
@@ -236,6 +285,11 @@ export default function HomeScreen() {
           <RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[COLORS.button]} />
         }
         ListHeaderComponent={ListHeader}
+        onEndReached={loadMoreDiscounts}
+        onEndReachedThreshold={0.5}
+        ListFooterComponent={
+          loadingMore ? <ActivityIndicator size="small" color={COLORS.button} style={{ padding: 16 }} /> : null
+        }
         ListEmptyComponent={
           !loading ? (
             <View style={styles.emptyContainer}>

@@ -1,11 +1,13 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { StyleSheet, TouchableOpacity, Image, View, Alert, ScrollView, Text } from 'react-native';
 import { useRouter } from 'expo-router';
-import { useDispatch, useSelector } from 'react-redux';
+import { useSelector } from 'react-redux';
 
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { RootState } from '@/store/store';
-import { logoutUser } from '@/store/slices/authSlice';
+import { logoutUser, fetchUserProfile } from '@/store/slices/authSlice';
+import { useAppDispatch } from '@/store/hooks';
+import { normalizeImageUrl } from '@/services/api';
 
 // Color Palette from Auth Screen
 const COLORS = {
@@ -22,8 +24,12 @@ const COLORS = {
 
 export default function ProfileScreen() {
   const router = useRouter();
-  const dispatch = useDispatch();
+  const dispatch = useAppDispatch();
   const { user } = useSelector((state: RootState) => state.auth);
+
+  useEffect(() => {
+    dispatch(fetchUserProfile());
+  }, [dispatch]);
 
   const handleLogout = () => {
     Alert.alert('Logout', 'Are you sure you want to logout?', [
@@ -55,6 +61,11 @@ export default function ProfileScreen() {
       icon: 'envelope.fill',
       route: '/profile/change-email',
     },
+    {
+      title: 'Đơn hàng của tôi',
+      icon: 'doc.text',
+      route: '/orders',
+    },
   ];
 
   return (
@@ -63,12 +74,12 @@ export default function ProfileScreen() {
         {/* Header / Avatar */}
         <View style={styles.header}>
             <View style={styles.avatarContainer}>
-                {user?.avatar ? (
-                    <Image source={{ uri: user.avatar }} style={styles.avatar} />
+                {user?.avatarUrl ? (
+                    <Image source={{ uri: normalizeImageUrl(user.avatarUrl)! }} style={styles.avatar} />
                 ) : (
                     <View style={[styles.avatarPlaceholder, { backgroundColor: COLORS.button }]}>
                         <Text style={styles.avatarText}>
-                            {user?.firstName?.[0] || user?.email?.[0] || '?'}
+                            {user?.name?.[0] || user?.email?.[0] || '?'}
                         </Text>
                     </View>
                 )}
@@ -77,10 +88,9 @@ export default function ProfileScreen() {
                 </TouchableOpacity>
             </View>
             <Text style={styles.name}>
-                {user?.firstName} {user?.lastName}
+                {user?.name}
             </Text>
             <Text style={styles.email}>{user?.email}</Text>
-            <Text style={styles.phone}>{user?.phoneNumber}</Text>
         </View>
 
         {/* Menu Items */}

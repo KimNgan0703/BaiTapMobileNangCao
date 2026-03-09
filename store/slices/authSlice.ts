@@ -1,17 +1,14 @@
 import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
 import apiClient, { ApiResponse } from '@/services/api';
 import { userService } from '@/services/userService';
-import { clearAuth } from '@/utils/storage';
+import { clearAuth, getAccessToken } from '@/utils/storage';
 
 export interface User {
-    id: string;
+    userId: string;
     email: string;
-    name?: string;
-    firstName?: string;
-    lastName?: string;
-    gender?: string;
-    phoneNumber?: string;
-    avatar?: string;
+    name: string;
+    gender: string;
+    avatarUrl?: string;
 }
 
 interface AuthState {
@@ -19,6 +16,7 @@ interface AuthState {
   loading: boolean;
   error: string | null;
   isLoggedIn: boolean;
+  isInitialized: boolean;
   updateStatus: 'idle' | 'loading' | 'succeeded' | 'failed';
 }
 
@@ -27,8 +25,26 @@ const initialState: AuthState = {
   loading: false,
   error: null,
   isLoggedIn: false,
+  isInitialized: false,
   updateStatus: 'idle',
 };
+
+export const initializeAuth = createAsyncThunk(
+  'auth/initialize',
+  async (_, { rejectWithValue }) => {
+    try {
+      const token = await getAccessToken();
+      if (!token) {
+        return null;
+      }
+      const data = await userService.getMe();
+      return data.data;
+    } catch {
+      await clearAuth();
+      return null;
+    }
+  }
+);
 
 export const fetchUserProfile = createAsyncThunk(
   'auth/fetchUserProfile',
@@ -48,11 +64,10 @@ export const fetchUserProfile = createAsyncThunk(
 
 export const updateUserInfo = createAsyncThunk(
     'auth/updateUserInfo',
-    async ({ id, data }: { id: string | number, data: { name: string; gender: string; avatarUri?: string } }, { rejectWithValue }) => {
+    async ({ id, data }: { id: string; data: { name: string; gender: string; avatarUri?: string } }, { rejectWithValue }) => {
         try {
             const response = await userService.updateProfile(id, data);
-            // Backend returns { status, message, data: UserDto }
-            return response.data; 
+            return response.data;
         } catch (error: any) {
             return rejectWithValue(typeof error === 'string' ? error : error.message || 'Update failed');
         }
@@ -100,6 +115,9 @@ const authSlice = createSlice({
       state.isLoggedIn = !!action.payload;
       state.error = null;
     },
+    setLoggedIn: (state, action: PayloadAction<boolean>) => {
+      state.isLoggedIn = action.payload;
+    },
     resetAuth: (state) => {
         state.user = null;
         state.isLoggedIn = false;
@@ -128,6 +146,22 @@ const authSlice = createSlice({
         state.loading = false;
         state.error = action.payload as string;
       })
+      // Initialize
+      .addCase(initializeAuth.pending, (state) => {
+        state.loading = true;
+      })
+      .addCase(initializeAuth.fulfilled, (state, action) => {
+        state.loading = false;
+        state.isInitialized = true;
+        if (action.payload) {
+          state.user = action.payload;
+          state.isLoggedIn = true;
+        }
+      })
+      .addCase(initializeAuth.rejected, (state) => {
+        state.loading = false;
+        state.isInitialized = true;
+      })
       // Logout
       .addCase(logoutUser.fulfilled, (state) => {
           state.user = null;
@@ -140,7 +174,8 @@ const authSlice = createSlice({
       })
       .addCase(updateUserInfo.fulfilled, (state, action) => {
           state.updateStatus = 'succeeded';
-          if (state.user) {
+          console.log('Update user info success:', action.payload);
+          if (state.user && action.payload) {
               state.user = { ...state.user, ...action.payload };
           }
       })
@@ -176,5 +211,5 @@ const authSlice = createSlice({
   },
 });
 
-export const { setUser, resetAuth, clearError } = authSlice.actions;
+export const { setUser, setLoggedIn, resetAuth, clearError } = authSlice.actions;
 export default authSlice.reducer;
