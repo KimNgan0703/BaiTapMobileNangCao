@@ -140,7 +140,9 @@ const authSlice = createSlice({
       .addCase(fetchUserProfile.fulfilled, (state, action) => {
         state.loading = false;
         state.user = action.payload;
-        state.isLoggedIn = true;
+        // Do NOT set isLoggedIn here — auth state is managed only by login/logout actions.
+        // Setting it here causes a race condition: an in-flight fetchUserProfile completing
+        // after logout would flip isLoggedIn back to true and redirect the user away from login.
       })
       .addCase(fetchUserProfile.rejected, (state, action) => {
         state.loading = false;

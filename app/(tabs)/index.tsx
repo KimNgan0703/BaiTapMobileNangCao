@@ -211,18 +211,6 @@ export default function HomeScreen() {
         </View>
       </View>
 
-      <View style={styles.searchContainer}>
-          <IconSymbol name="magnifyingglass" size={20} color={COLORS.secondaryText} style={styles.searchIcon} />
-          <TextInput 
-              style={styles.searchInput}
-              placeholder="Search courses..."
-              placeholderTextColor={COLORS.secondaryText}
-              value={searchQuery}
-              onChangeText={setSearchQuery}
-              onSubmitEditing={() => {/* Implement Search Action */}}
-          />
-      </View>
-
       {/* Hero Section */}
       <View style={styles.heroSection}>
           <View style={styles.heroContent}>

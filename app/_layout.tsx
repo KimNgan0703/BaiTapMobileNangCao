@@ -33,15 +33,15 @@ function RootNav() {
   // Auth guard: redirect based on login state
   useEffect(() => {
     if (!isInitialized) return;
-
-    // Public routes that don't require login
-    const publicRoutes = [undefined, 'verify-otp', 'forgot-password', 'reset-password'];
+    const publicRoutes = [undefined, 'index', 'verify-otp', 'forgot-password', 'reset-password'];
     const isOnPublicRoute = publicRoutes.includes(segments[0] as any);
+    console.log('Auth guard check:', { isLoggedIn, segments, isOnPublicRoute });
 
     if (!isLoggedIn && !isOnPublicRoute) {
-      // Not logged in but trying to access a protected route
+      console.log('Not logged in and trying to access a protected route. Redirecting to login.');
       router.replace('/');
     } else if (isLoggedIn && isOnPublicRoute) {
+      console.log('Already logged in but on a public route. Redirecting to home.');
       // Already logged in but sitting on a public route → go to home
       router.replace('/(tabs)');
     }

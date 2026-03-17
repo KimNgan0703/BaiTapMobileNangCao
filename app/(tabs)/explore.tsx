@@ -5,6 +5,8 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { courseService, Course } from '@/services/courseService';
 import { normalizeImageUrl } from '@/services/api';
+import { useAppDispatch, useAppSelector } from '@/store/hooks';
+import { addToWishlist, removeFromWishlist } from '@/store/slices/wishlistSlice';
 
 const COURSE_PLACEHOLDER = require('@/assets/images/react-logo.png');
 
@@ -25,6 +27,8 @@ const COLORS = {
 
 export default function ExploreScreen() {
   const router = useRouter();
+  const dispatch = useAppDispatch();
+  const wishlistCourseIds = useAppSelector((state) => state.wishlist.courseIds);
   const [courses, setCourses] = useState<Course[]>([]);
   const [loading, setLoading] = useState(false);
   const [page, setPage] = useState(1);
@@ -81,8 +85,17 @@ export default function ExploreScreen() {
       fetchCourses(true);
   }
 
+  const handleWishlistToggle = (courseId: string) => {
+    if (wishlistCourseIds.includes(courseId)) {
+      dispatch(removeFromWishlist(courseId));
+    } else {
+      dispatch(addToWishlist(courseId));
+    }
+  };
+
   const renderItem = ({ item }: { item: Course }) => {
     const hasDiscount = item.discountedPrice != null && item.discountedPrice < item.price;
+    const isInWishlist = wishlistCourseIds.includes(item.id);
     return (
       <TouchableOpacity
         style={styles.card}
@@ -98,6 +111,16 @@ export default function ExploreScreen() {
               <Text style={styles.saleBadgeText}>Sale</Text>
             </View>
           )}
+          <TouchableOpacity
+            style={styles.wishlistBtn}
+            onPress={() => handleWishlistToggle(item.id)}
+          >
+            <IconSymbol
+              name={isInWishlist ? 'heart.fill' : 'heart'}
+              size={18}
+              color={isInWishlist ? COLORS.button : 'white'}
+            />
+          </TouchableOpacity>
         </View>
         <View style={styles.cardInfo}>
           <Text style={styles.cardCategory}>{item.category || 'General'}</Text>
@@ -254,6 +277,17 @@ const styles = StyleSheet.create({
       paddingHorizontal: 6,
       paddingVertical: 2,
       borderRadius: 4,
+  },
+  wishlistBtn: {
+      position: 'absolute',
+      top: 6,
+      right: 6,
+      backgroundColor: 'rgba(0,0,0,0.3)',
+      width: 28,
+      height: 28,
+      borderRadius: 14,
+      justifyContent: 'center',
+      alignItems: 'center',
   },
   saleBadgeText: {
       color: 'white',

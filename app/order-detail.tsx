@@ -29,7 +29,7 @@ const COLORS = {
 
 const STATUS_CONFIG: Record<string, { label: string; color: string }> = {
   PROCESSING: { label: 'Chờ thanh toán', color: COLORS.orange },
-  COMPLETED: { label: 'Đã thanh toán', color: COLORS.green },
+  PAID: { label: 'Đã thanh toán', color: COLORS.green },
   CANCELLED: { label: 'Đã hủy', color: '#999' },
 };
 

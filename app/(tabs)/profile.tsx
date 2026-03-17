@@ -1,13 +1,14 @@
 import React, { useEffect } from 'react';
 import { StyleSheet, TouchableOpacity, Image, View, Alert, ScrollView, Text } from 'react-native';
-import { useRouter } from 'expo-router';
+import { useNavigation, useRouter } from 'expo-router';
 import { useSelector } from 'react-redux';
 
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { RootState } from '@/store/store';
-import { logoutUser, fetchUserProfile } from '@/store/slices/authSlice';
+import { resetAuth, fetchUserProfile } from '@/store/slices/authSlice';
 import { useAppDispatch } from '@/store/hooks';
 import { normalizeImageUrl } from '@/services/api';
+import { clearAuth } from '@/utils/storage';
 
 // Color Palette from Auth Screen
 const COLORS = {
@@ -25,6 +26,7 @@ const COLORS = {
 export default function ProfileScreen() {
   const router = useRouter();
   const dispatch = useAppDispatch();
+  const navigation = useNavigation();
   const { user } = useSelector((state: RootState) => state.auth);
 
   useEffect(() => {
@@ -37,9 +39,9 @@ export default function ProfileScreen() {
       {
         text: 'Logout',
         style: 'destructive',
-        onPress: async () => {
-          await dispatch(logoutUser() as any); 
-          router.replace('/');
+        onPress: () => {
+          dispatch(resetAuth());
+          clearAuth();
         },
       },
     ]);
@@ -65,6 +67,11 @@ export default function ProfileScreen() {
       title: 'Đơn hàng của tôi',
       icon: 'doc.text',
       route: '/orders',
+    },
+    {
+      title: 'Danh sách yêu thích',
+      icon: 'heart.fill',
+      route: '/wishlist',
     },
   ];
 
