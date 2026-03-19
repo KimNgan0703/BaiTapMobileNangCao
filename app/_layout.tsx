@@ -12,6 +12,8 @@ import * as Linking from 'expo-linking';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
 import { initializeAuth } from '@/store/slices/authSlice';
+import { connectNotificationSocket, disconnectNotificationSocket } from '@/services/notificationSocket';
+import { fetchUnreadCount, notificationReceived, resetNotifications } from '@/store/slices/notificationSlice';
 import { paymentState } from '@/utils/paymentState';
 
 export const unstable_settings = {
@@ -29,6 +31,28 @@ function RootNav() {
   useEffect(() => {
     dispatch(initializeAuth());
   }, []);
+
+  useEffect(() => {
+    if (!isLoggedIn) {
+      disconnectNotificationSocket();
+      dispatch(resetNotifications());
+      return;
+    }
+
+    dispatch(fetchUnreadCount());
+    connectNotificationSocket({
+      onNotification: (notification) => {
+        dispatch(notificationReceived(notification));
+      },
+      onConnected: () => {
+        dispatch(fetchUnreadCount());
+      },
+    });
+
+    return () => {
+      disconnectNotificationSocket();
+    };
+  }, [dispatch, isLoggedIn]);
 
   // Auth guard: redirect based on login state
   useEffect(() => {
@@ -99,6 +123,7 @@ function RootNav() {
         <Stack.Screen name="payment-success" options={{ headerShown: false, gestureEnabled: false }} />
         <Stack.Screen name="orders" options={{ headerShown: false }} />
         <Stack.Screen name="order-detail" options={{ headerShown: false }} />
+        <Stack.Screen name="notifications" options={{ headerShown: false }} />
       </Stack>
       <StatusBar style="auto" />
     </ThemeProvider>

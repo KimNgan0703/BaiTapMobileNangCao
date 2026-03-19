@@ -1,6 +1,6 @@
 import React, { useEffect } from 'react';
 import { StyleSheet, TouchableOpacity, Image, View, Alert, ScrollView, Text } from 'react-native';
-import { useNavigation, useRouter } from 'expo-router';
+import { useRouter } from 'expo-router';
 import { useSelector } from 'react-redux';
 
 import { IconSymbol } from '@/components/ui/icon-symbol';
@@ -26,8 +26,8 @@ const COLORS = {
 export default function ProfileScreen() {
   const router = useRouter();
   const dispatch = useAppDispatch();
-  const navigation = useNavigation();
   const { user } = useSelector((state: RootState) => state.auth);
+  const unreadCount = useSelector((state: RootState) => state.notifications.unreadCount);
 
   useEffect(() => {
     dispatch(fetchUserProfile());
@@ -73,6 +73,11 @@ export default function ProfileScreen() {
       icon: 'heart.fill',
       route: '/wishlist',
     },
+    {
+      title: 'Thông báo',
+      icon: 'bell.fill',
+      route: '/notifications',
+    },
   ];
 
   return (
@@ -112,6 +117,11 @@ export default function ProfileScreen() {
                      <IconSymbol name={item.icon as any} size={22} color={COLORS.text} />
                 </View>
                 <Text style={styles.menuItemText}>{item.title}</Text>
+                {item.route === '/notifications' && unreadCount > 0 && (
+                  <View style={styles.badge}>
+                    <Text style={styles.badgeText}>{unreadCount > 99 ? '99+' : unreadCount}</Text>
+                  </View>
+                )}
               </View>
               <IconSymbol name="chevron.right" size={20} color={COLORS.secondaryText} />
             </TouchableOpacity>
@@ -234,6 +244,20 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: COLORS.textDark,
     fontWeight: '500',
+  },
+  badge: {
+    backgroundColor: COLORS.button,
+    minWidth: 22,
+    height: 22,
+    borderRadius: 11,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 6,
+  },
+  badgeText: {
+    color: COLORS.white,
+    fontSize: 11,
+    fontWeight: '700',
   },
   logoutButton: {
     marginTop: 30,

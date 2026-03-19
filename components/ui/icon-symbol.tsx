@@ -32,6 +32,8 @@ const MAPPING = {
   'circle': 'radio-button-unchecked',
   'lock.fill': 'lock',
   'envelope.fill': 'email',
+  'bell.fill': 'notifications',
+  'bell.badge.fill': 'notifications-active',
   'trash.fill': 'delete',
   'doc.text': 'description',
   'magnifyingglass': 'search',
